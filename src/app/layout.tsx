@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { siteConfig } from "@/config/site";
 import { defaultLocale, isLocale } from "@/i18n/config";
 
+import "@fontsource-variable/manrope/wght.css";
+import "@fontsource-variable/newsreader/wght.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

@@ -4,7 +4,7 @@
 
 **Luxury science**: editorial scale and restraint combined with laboratory precision. The interface should feel deliberate, quiet, and material—not medical, cyberpunk, dashboard-like, or template-driven.
 
-## Current token direction
+## Final Phase 2 token direction
 
 - Canvas: near-black `#070707`
 - Surfaces: `#0D0D0D`, `#141414`, `#191919`
@@ -14,16 +14,16 @@
 - Accent: restrained muted metal `#C6B486`; final use requires palette approval
 - Status colours: desaturated green/amber/red, always paired with text or icon meaning
 
-These values are provisional and centralised in `src/app/globals.css` so final brand colours can replace them without component rewrites.
+These values establish the approved Phase 2 direction and remain centralised in `src/app/globals.css`, allowing the final supplied brand palette to replace them without component rewrites.
 
 ## Typography
 
-Recommended final pairing:
+Implemented pairing:
 
-- Display/editorial serif: **Newsreader** (open source) for a refined scientific editorial voice, or a licensed alternative such as Editorial New if the brand owns a licence.
-- Body/UI sans: **Inter** or **Suisse Intl** if licensed, for dense admin legibility and neutral storefront controls.
+- Display/editorial serif: **Newsreader Variable** (OFL), chosen for a refined editorial voice, optical contrast, and excellent large-scale composition without fashion-brand imitation.
+- Body/UI sans: **Manrope Variable** (OFL), chosen for neutral geometry, clear compact labels, Latin Extended/Serbian coverage, and strong UI legibility.
 
-The code currently uses robust system fallbacks to avoid pretending unprovided font assets are final. Use two families only. Display text is low-weight with tight optical tracking; UI labels use compact uppercase sans with wider tracking.
+Both fonts are self-hosted from locked npm packages, so production rendering has no Google CDN dependency. Display text uses low variable weights with tight optical tracking; UI labels use compact uppercase sans with wider tracking.
 
 ## Layout
 
@@ -53,7 +53,7 @@ The code currently uses robust system fallbacks to avoid pretending unprovided f
 
 ## Motion
 
-Target intensity is 6/10. Use GSAP only when Phase 2 demonstrates a meaningful mask reveal, stagger, or parallax not cleanly handled by CSS. All motion respects `prefers-reduced-motion`, never hijacks scroll, and does not delay primary content or input.
+Target intensity is 6/10. Phase 2 uses CSS entrance/scale transitions and a progressive-enhancement IntersectionObserver reveal. GSAP was intentionally not added because the approved interactions do not require timeline orchestration. All motion respects `prefers-reduced-motion`, never hijacks scroll, and keeps content visible when JavaScript is unavailable.
 
 ## Responsive intent
 

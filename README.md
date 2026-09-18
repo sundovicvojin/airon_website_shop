@@ -1,6 +1,6 @@
 # AIRON Commerce
 
-Production-oriented foundation for AIRON, a premium bilingual biotechnology commerce platform. The repository currently contains **Phase 1 only**: the application foundation, design tokens, localisation scaffolding, environment validation, Supabase client boundaries, shared UI primitives, and baseline error/empty states.
+Production-oriented foundation and approved visual-language study for AIRON, a premium bilingual biotechnology commerce platform. The repository currently contains **Phase 1 and Phase 2 only**: application foundations plus the header, cinematic hero, development-only product-card study, quality section, footer, responsive system, and restrained motion language.
 
 No products, categories, customers, orders, coupons, batches, or COA documents are seeded or hardcoded.
 
@@ -12,6 +12,7 @@ No products, categories, customers, orders, coupons, batches, or COA documents a
 - Supabase SSR and Supabase JS clients
 - Zod environment validation
 - English and Serbian route/dictionary foundation
+- Self-hosted Newsreader Variable and Manrope Variable fonts
 
 ## Local setup
 
@@ -73,7 +74,8 @@ The intended host is Vercel. Configure environment variables separately for prev
 - [Design system](docs/DESIGN_SYSTEM.md)
 - [Admin plan](docs/ADMIN.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [Phase 2 visual-language report](docs/PHASE_2.md)
 
 ## Current scope
 
-Phase 1 is not a finished storefront. The temporary foundation page proves routing, responsive tokens, localisation, accessibility defaults, and zero-product behaviour. Phase 2 will establish the final AIRON visual language after the missing brand assets are supplied or approved.
+Phase 2 is not a finished storefront and deliberately stops before catalogue/database integration. Product preview data is returned only when `NODE_ENV === "development"`; production renders no product card or fabricated commerce values. Phase 3 requires explicit approval.

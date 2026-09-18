@@ -19,11 +19,13 @@ export default async function ShopPage({ params }: ShopPageProps) {
   const copy = await getDictionary(locale);
 
   return (
-    <main className="min-h-screen py-20">
+    <main className="min-h-[75vh] pb-24 pt-40 sm:pb-32 sm:pt-48">
       <Container>
-        <p className="type-eyebrow mb-5 text-accent">{copy.shop.eyebrow}</p>
-        <h1 className="font-serif text-5xl tracking-[-0.03em] sm:text-7xl">{copy.shop.title}</h1>
-        <div className="mt-16">
+        <div className="border-b border-line pb-10 sm:pb-14">
+          <p className="type-eyebrow mb-5 text-accent">{copy.shop.eyebrow}</p>
+          <h1 className="font-serif text-6xl font-light tracking-[-0.045em] sm:text-8xl">{copy.shop.title}</h1>
+        </div>
+        <div className="mt-10 sm:mt-14">
           <EmptyState title={copy.shop.emptyTitle} description={copy.shop.emptyDescription} />
         </div>
       </Container>

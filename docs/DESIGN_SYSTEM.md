@@ -51,6 +51,8 @@ Both fonts are self-hosted from locked npm packages, so production rendering has
 - Tables: dense admin-specific component set, separate from cinematic storefront styles.
 - Empty/loading/error states: honest, calm, and action-oriented; no fabricated content.
 
+Phase 3 adds native-dialog search and cart surfaces, editorial page heroes, numbered content rows, shop controls, a product-detail split layout, contact form states, policy notices, and full empty-catalogue presentation. Drawers are full-width on small screens and bounded on desktop; product detail collapses from a split composition to image-first flow below 1024px.
+
 ## Motion
 
 Target intensity is 6/10. Phase 2 uses CSS entrance/scale transitions and a progressive-enhancement IntersectionObserver reveal. GSAP was intentionally not added because the approved interactions do not require timeline orchestration. All motion respects `prefers-reduced-motion`, never hijacks scroll, and keeps content visible when JavaScript is unavailable.
@@ -62,3 +64,5 @@ Mobile is composed separately: shorter lines, image-first products, thumb-safe 4
 ## Accessibility baseline
 
 Semantic elements, visible focus, sufficient contrast, explicit form labels, keyboard-operable menus/dialogs, meaningful alt text, and non-colour status cues are mandatory. ARIA supplements native HTML; it does not replace it.
+
+Native `<dialog>` provides focus containment and Escape handling for search, cart, and mobile navigation. Openers retain native button semantics, hidden labels name search inputs, result and validation messages use live regions, and `prefers-reduced-motion` collapses all motion durations while preserving content.

@@ -33,6 +33,23 @@ Browser
 - Public product pages are server-rendered with explicit cache/revalidation rules after the schema exists.
 - Privileged admin reads and all sensitive mutations execute server-side.
 
+## Phase 3 public storefront boundaries
+
+- Route pages and editorial content remain Server Components.
+- `SearchDialog`, `CartDrawer`, `ShopControls`, `ContactForm`, `ProductDetail`, and progressive reveal behaviour are the only client-side interaction boundaries.
+- Search accepts local UI input and renders an honest empty result. A future catalogue search adapter can replace the empty collection without changing the dialog.
+- Cart types and views model a zero-item public shell only. The drawer and `/cart` route do not persist state, fabricate line items, or create orders.
+- Product and collection dynamic routes are ready for Phase 4 queries. Unknown slugs call `notFound()`; production exposes no fixture route.
+- Contact input is validated with Zod in the browser, then explicitly reports that delivery is inactive. No message is transmitted or stored.
+
+## Development fixture rule
+
+The visual product fixture is returned only when `NODE_ENV === "development"`. It can exercise both the product card and product-detail composition locally. Production catalogue output remains empty and must never fall back to this fixture.
+
+## Public route surface
+
+Localized routes cover the homepage, shop, products, collections, quality, verification, about, contact, cart, and six legal/policy drafts. Shared locale layout owns header/footer controls and typed dictionaries; route-specific loading, error, empty, and not-found states preserve the AIRON visual system.
+
 ## Locale policy
 
 Public URLs use `/en/...` and `/sr/...`; English is the default. UI copy lives in typed dictionaries. Database-authored content requires a translation policy before Phase 4; the recommended model is separate translation tables for products/categories/content so missing translations can fall back predictably without duplicating commerce facts such as price or stock.

@@ -36,7 +36,7 @@ export function ProductPreviewSection({ copy, locale, product }: ProductPreviewS
           </Reveal>
 
           <Reveal className="product-preview-section__card" delay={120}>
-            <ProductCard copy={copy} locale={locale} product={product} />
+            <ProductCard copy={copy} href={`/${locale}/products/${product.slug}`} locale={locale} product={product} />
           </Reveal>
         </div>
       </Container>

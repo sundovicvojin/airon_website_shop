@@ -22,7 +22,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <>
-      <SiteHeader copy={copy.header} locale={locale} />
+      <SiteHeader cartCopy={copy.cart} copy={copy.header} locale={locale} searchCopy={copy.search} />
       {children}
       <SiteFooter copy={copy.footer} locale={locale} />
     </>

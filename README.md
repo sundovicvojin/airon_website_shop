@@ -1,6 +1,6 @@
 # AIRON Commerce
 
-Production-oriented foundation and approved visual-language study for AIRON, a premium bilingual biotechnology commerce platform. The repository currently contains **Phase 1 and Phase 2 only**: application foundations plus the header, cinematic hero, development-only product-card study, quality section, footer, responsive system, and restrained motion language.
+Production-oriented public storefront for AIRON, a premium bilingual biotechnology commerce platform. Phases 1–3 include the application foundation, approved visual language, complete public pages, zero-data catalogue architecture, search UI, cart UI, legal drafts, and accessible responsive states.
 
 No products, categories, customers, orders, coupons, batches, or COA documents are seeded or hardcoded.
 
@@ -24,7 +24,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The visual foundation is available at `http://localhost:3000/en` and `http://localhost:3000/sr`. Supabase values can remain empty while viewing the Phase 1 pages because clients are created lazily only where data access is needed.
+The storefront is available at `http://localhost:3000/en` and `http://localhost:3000/sr`. Supabase values can remain empty because Phase 3 uses a zero-data catalogue boundary and creates clients lazily only where data access is needed.
 
 ## Quality checks
 
@@ -76,6 +76,12 @@ The intended host is Vercel. Configure environment variables separately for prev
 - [Deployment](docs/DEPLOYMENT.md)
 - [Phase 2 visual-language report](docs/PHASE_2.md)
 
+## Public routes
+
+Every route is available under `/en` and `/sr`: homepage, `/shop`, `/products/[slug]`, `/collections`, `/collections/[slug]`, `/quality`, `/verification`, `/about`, `/contact`, `/cart`, `/terms`, `/privacy`, `/cookies`, `/shipping`, `/returns`, and `/disclaimer`.
+
+Unknown product and collection slugs return the AIRON not-found experience. Production contains no published products or collections. The only product fixture is available during local development at `/[locale]/products/development-visual-study-01` and is excluded from production presentation.
+
 ## Current scope
 
-Phase 2 is not a finished storefront and deliberately stops before catalogue/database integration. Product preview data is returned only when `NODE_ENV === "development"`; production renders no product card or fabricated commerce values. Phase 3 requires explicit approval.
+Phase 3 is complete and deliberately stops before database integration. Product preview data is returned only when `NODE_ENV === "development"`; production renders no product card or fabricated commerce values. Supabase migrations, catalogue persistence, admin, authentication, checkout, orders, inventory and payments remain deferred to Phase 4+.

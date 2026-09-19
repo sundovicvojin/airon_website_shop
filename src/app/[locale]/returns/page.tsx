@@ -1,0 +1,2 @@
+import { notFound } from "next/navigation"; import { LegalPage } from "@/features/content/components/legal-page"; import { isLocale } from "@/i18n/config"; import { getDictionary } from "@/i18n/dictionaries";
+export default async function ReturnsPage({ params }: PageProps<"/[locale]/returns">) { const { locale } = await params; if (!isLocale(locale)) notFound(); const copy = await getDictionary(locale); return <LegalPage copy={copy.legal.returns} draftNotice={copy.common.draftNotice} />; }

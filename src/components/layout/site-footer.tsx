@@ -5,6 +5,7 @@ import { ArrowIcon } from "@/components/icons/site-icons";
 import type { Locale } from "@/i18n/config";
 
 export type FooterCopy = Readonly<{
+  about: string;
   company: string;
   contact: string;
   cookies: string;
@@ -19,6 +20,7 @@ export type FooterCopy = Readonly<{
   statement: string;
   support: string;
   terms: string;
+  verification: string;
 }>;
 
 type SiteFooterProps = Readonly<{
@@ -32,31 +34,32 @@ export function SiteFooter({ copy, locale }: SiteFooterProps) {
       label: copy.shop,
       links: [
         { href: `/${locale}/shop`, label: copy.shop },
-        { href: "#quality", label: copy.quality },
+        { href: `/${locale}/quality`, label: copy.quality },
       ],
     },
     {
       label: copy.company,
       links: [
-        { href: "#about", label: copy.company },
-        { href: "#verification", label: copy.quality },
+        { href: `/${locale}/about`, label: copy.about },
+        { href: `/${locale}/quality`, label: copy.quality },
+        { href: `/${locale}/verification`, label: copy.verification },
       ],
     },
     {
       label: copy.support,
       links: [
-        { href: "#footer", label: copy.contact },
-        { href: "#footer", label: copy.shipping },
-        { href: "#footer", label: copy.returns },
+        { href: `/${locale}/contact`, label: copy.contact },
+        { href: `/${locale}/shipping`, label: copy.shipping },
+        { href: `/${locale}/returns`, label: copy.returns },
       ],
     },
     {
       label: copy.legal,
       links: [
-        { href: "#footer", label: copy.privacy },
-        { href: "#footer", label: copy.terms },
-        { href: "#footer", label: copy.cookies },
-        { href: "#footer", label: copy.disclaimer },
+        { href: `/${locale}/privacy`, label: copy.privacy },
+        { href: `/${locale}/terms`, label: copy.terms },
+        { href: `/${locale}/cookies`, label: copy.cookies },
+        { href: `/${locale}/disclaimer`, label: copy.disclaimer },
       ],
     },
   ];

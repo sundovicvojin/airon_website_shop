@@ -4,8 +4,12 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { Wordmark } from "@/components/brand/wordmark";
-import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "@/components/icons/site-icons";
+import { CloseIcon, MenuIcon, UserIcon } from "@/components/icons/site-icons";
+import { LanguageSwitch } from "@/components/layout/language-switch";
+import { CartDrawer } from "@/features/cart/components/cart-drawer";
+import { SearchDialog } from "@/features/search/components/search-dialog";
 import type { Locale } from "@/i18n/config";
+import type { Dictionary } from "@/i18n/dictionaries";
 
 export type HeaderCopy = Readonly<{
   about: string;
@@ -24,16 +28,16 @@ export type HeaderCopy = Readonly<{
 }>;
 
 type SiteHeaderProps = Readonly<{
+  cartCopy: Dictionary["cart"];
   copy: HeaderCopy;
   locale: Locale;
+  searchCopy: Dictionary["search"];
 }>;
 
-export function SiteHeader({ copy, locale }: SiteHeaderProps) {
+export function SiteHeader({ cartCopy, copy, locale, searchCopy }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const alternateLocale = locale === "en" ? "sr" : "en";
-
   useEffect(() => {
     const updateHeader = () => setScrolled(window.scrollY > 18);
     updateHeader();
@@ -55,10 +59,10 @@ export function SiteHeader({ copy, locale }: SiteHeaderProps) {
   const navigation = [
     { href: `/${locale}/shop`, label: copy.shop },
     { href: `/${locale}/shop`, label: copy.products },
-    { href: "#product-preview", label: copy.collections },
-    { href: "#quality", label: copy.quality },
-    { href: "#verification", label: copy.verification },
-    { href: "#about", label: copy.about },
+    { href: `/${locale}/collections`, label: copy.collections },
+    { href: `/${locale}/quality`, label: copy.quality },
+    { href: `/${locale}/verification`, label: copy.verification },
+    { href: `/${locale}/about`, label: copy.about },
   ];
 
   return (
@@ -76,24 +80,12 @@ export function SiteHeader({ copy, locale }: SiteHeaderProps) {
           </nav>
 
           <div className="site-header__actions">
-            <button aria-label={`${copy.search} — ${copy.unavailable}`} className="header-icon" disabled type="button">
-              <SearchIcon className="size-[1.15rem]" />
-            </button>
-            <Link
-              aria-label={`${copy.language}: ${alternateLocale.toUpperCase()}`}
-              className="header-language"
-              href={`/${alternateLocale}`}
-              lang={alternateLocale}
-            >
-              {locale.toUpperCase()}
-            </Link>
+            <SearchDialog copy={searchCopy} instanceId="desktop-search" triggerLabel={copy.search} />
+            <LanguageSwitch className="header-language" label={copy.language} locale={locale} />
             <button aria-label={`${copy.account} — ${copy.unavailable}`} className="header-icon" disabled type="button">
               <UserIcon className="size-[1.15rem]" />
             </button>
-            <button aria-label={`${copy.cart}: 0 — ${copy.unavailable}`} className="header-icon header-cart" disabled type="button">
-              <BagIcon className="size-[1.15rem]" />
-              <span>0</span>
-            </button>
+            <CartDrawer copy={cartCopy} instanceId="desktop-cart" locale={locale} triggerLabel={copy.cart} />
           </div>
         </div>
 
@@ -112,13 +104,8 @@ export function SiteHeader({ copy, locale }: SiteHeaderProps) {
           <Wordmark href={`/${locale}`} />
 
           <div className="flex items-center justify-self-end">
-            <button aria-label={`${copy.search} — ${copy.unavailable}`} className="header-icon" disabled type="button">
-              <SearchIcon className="size-[1.15rem]" />
-            </button>
-            <button aria-label={`${copy.cart}: 0 — ${copy.unavailable}`} className="header-icon header-cart" disabled type="button">
-              <BagIcon className="size-[1.15rem]" />
-              <span>0</span>
-            </button>
+            <SearchDialog copy={searchCopy} instanceId="mobile-search" triggerLabel={copy.search} />
+            <CartDrawer copy={cartCopy} instanceId="mobile-cart" locale={locale} triggerLabel={copy.cart} />
           </div>
         </div>
       </header>

@@ -80,7 +80,7 @@ export function SiteHeader({ cartCopy, copy, locale, searchCopy }: SiteHeaderPro
           </nav>
 
           <div className="site-header__actions">
-            <SearchDialog copy={searchCopy} instanceId="desktop-search" triggerLabel={copy.search} />
+            <SearchDialog copy={searchCopy} instanceId="desktop-search" locale={locale} triggerLabel={copy.search} />
             <LanguageSwitch className="header-language" label={copy.language} locale={locale} />
             <button aria-label={`${copy.account} — ${copy.unavailable}`} className="header-icon" disabled type="button">
               <UserIcon className="size-[1.15rem]" />
@@ -104,7 +104,7 @@ export function SiteHeader({ cartCopy, copy, locale, searchCopy }: SiteHeaderPro
           <Wordmark href={`/${locale}`} />
 
           <div className="flex items-center justify-self-end">
-            <SearchDialog copy={searchCopy} instanceId="mobile-search" triggerLabel={copy.search} />
+            <SearchDialog copy={searchCopy} instanceId="mobile-search" locale={locale} triggerLabel={copy.search} />
             <CartDrawer copy={cartCopy} instanceId="mobile-cart" locale={locale} triggerLabel={copy.cart} />
           </div>
         </div>

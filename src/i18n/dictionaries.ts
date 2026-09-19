@@ -8,6 +8,7 @@ export type Dictionary = {
   header: { about: string; account: string; cart: string; close: string; collections: string; language: string; menu: string; products: string; quality: string; search: string; shop: string; unavailable: string; verification: string };
   hero: { description: string; eyebrow: string; primaryAction: string; secondaryAction: string; titleFirst: string; titleSecond: string; visualNote: string };
   home: {
+    featured: { eyebrow: string; title: string; description: string };
     collections: { eyebrow: string; title: string; body: string; empty: string; action: string };
     family: { eyebrow: string; title: string; body: string; note: string };
     why: { eyebrow: string; title: string; items: readonly ContentBlock[] };

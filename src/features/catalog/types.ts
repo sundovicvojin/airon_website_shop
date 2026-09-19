@@ -7,7 +7,7 @@ export type ProductCardModel = Readonly<{
   currency: "EUR";
   featured?: boolean;
   id: string;
-  image: StaticImageData | string;
+  image: StaticImageData | string | null;
   imageAlt: string;
   name: string;
   priceAmount: number;
@@ -28,4 +28,12 @@ export type ProductDetailModel = ProductCardModel & Readonly<{
   coaAvailable: boolean;
   shippingInformation: string;
   disclaimer: string;
+}>;
+
+export type PublicCategoryModel = Readonly<{
+  description: string;
+  id: string;
+  name: string;
+  productCount: number;
+  slug: string;
 }>;

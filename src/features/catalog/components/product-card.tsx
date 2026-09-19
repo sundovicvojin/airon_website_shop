@@ -16,12 +16,13 @@ type ProductCardCopy = Readonly<{
 type ProductCardProps = Readonly<{
   addToCart?: () => void;
   copy: ProductCardCopy;
+  developmentPreview?: boolean;
   locale: Locale;
   product: ProductCardModel;
   href?: string;
 }>;
 
-export function ProductCard({ addToCart, copy, href, locale, product }: ProductCardProps) {
+export function ProductCard({ addToCart, copy, developmentPreview = false, href, locale, product }: ProductCardProps) {
   const price = new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-IE", {
     currency: product.currency,
     style: "currency",
@@ -33,15 +34,15 @@ export function ProductCard({ addToCart, copy, href, locale, product }: ProductC
 
   const media = (
     <div className="product-card__media">
-        <Image
+        {product.image ? <Image
           alt={product.imageAlt}
           className="product-card__image"
           fill
           placeholder={typeof product.image === "string" ? "empty" : "blur"}
           sizes="(max-width: 767px) 92vw, (max-width: 1279px) 45vw, 32vw"
           src={product.image}
-        />
-        <span className="product-card__preview">{copy.previewOnly}</span>
+        /> : <div aria-label={product.imageAlt} className="product-card__image-placeholder" role="img">AIRON</div>}
+        {developmentPreview ? <span className="product-card__preview">{copy.previewOnly}</span> : null}
         <span className="product-card__index">A — 01</span>
     </div>
   );

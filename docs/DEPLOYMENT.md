@@ -2,55 +2,50 @@
 
 ## Environments
 
-Maintain separate local, preview/staging, and production Supabase projects. Never point preview deployments at production data. Scope Vercel environment variables accordingly.
+Use separate local, staging, and production Supabase projects and separate Vercel variable scopes. Preview deployments must never use production credentials. Keep local development unlinked from production.
 
-## Build gate
+## Required configuration
 
-Before deployment:
+Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_SITE_URL` per environment. Add `SUPABASE_SERVICE_ROLE_KEY` only to server-side secrets when privileged operations are deployed. Never prefix it with `NEXT_PUBLIC_`, expose it in browser code, or print it in logs.
+
+## Release gate
 
 ```bash
 npm ci
+npx supabase@latest db reset
+npx supabase@latest db lint --local --schema public --level warning --fail-on error
+npx supabase@latest gen types typescript --local --schema public > src/lib/supabase/database.types.ts
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-Later phases add database, unit, integration, E2E, accessibility, and visual tests to this gate.
+Database checks require Docker or an ephemeral CI Supabase stack. Fail the release if generated types differ from the committed file.
 
-## Migration order
+## Release order
 
-1. Back up production and confirm restore readiness.
-2. Review migration SQL, RLS policies, locks, and backward compatibility.
-3. Apply additive/backward-compatible migrations first.
-4. Deploy application code.
-5. Verify public empty states, admin access, and critical transactions.
-6. Remove deprecated fields only in a later deployment after all code stops using them.
+1. Back up the target and confirm restore ownership.
+2. Review SQL, locks, constraints, RLS, storage policies, and compatibility.
+3. Link the exact target and inspect pending migrations.
+4. Apply migrations with `supabase db push`.
+5. Deploy the Next.js application.
+6. Verify homepage, shop, collections, search, unknown-product 404, and empty cart against zero data.
+7. Confirm public roles remain read-only and storage access is scoped.
 
-No migration may seed products, categories, customers, orders, coupons, batches, or COA documents.
+Never seed business rows during deployment.
 
-## Vercel configuration
+## Vercel
 
 - Framework: Next.js
-- Node.js: 22+
+- Runtime: Node.js 22.x
 - Install: `npm ci`
-- Build: `npm run build` (Webpack is selected explicitly because the local managed environment blocks Turbopack's helper-process port binding; the output remains a standard Next.js production build.)
-- Configure canonical `NEXT_PUBLIC_SITE_URL` for each environment.
-- Keep `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, webhook secrets, and email keys server-only.
+- Build: `npm run build`
+- Canonical URL: environment-specific `NEXT_PUBLIC_SITE_URL`
 
-## Release checklist
+The build uses Webpack explicitly because the managed local environment blocks Turbopack helper-process port binding; the output is a standard Next.js deployment.
 
-- Final brand assets and fonts are licensed and present.
-- Product/legal/regulatory copy is approved for intended markets.
-- No placeholder legal tokens or `DRAFT — LEGAL REVIEW REQUIRED` copy can be mistaken for final production terms.
-- Supabase RLS/storage policies pass negative tests.
-- Admin role revocation takes effect immediately.
-- Price, coupon, shipping, tax, stock, and order total are server-validated.
-- Payment webhooks verify signatures and are idempotent.
-- Empty database and empty cart paths are tested.
-- Required viewport, keyboard, screen-reader, reduced-motion, and browser checks pass.
-- Sitemap/robots/indexing are enabled only when production content is ready.
-- Monitoring, alerting, backup, and incident ownership are assigned.
+## Release checks and rollback
 
-## Rollback
+Confirm clean migrations, current generated types, RLS/storage negative tests, no production fixtures, draft legal labeling, and viewport/keyboard/reduced-motion checks. Phase 6 must add transactional total/stock validation and idempotent payment handling before checkout is enabled.
 
-Application rollback uses the previous known-good Vercel deployment. Database changes must be designed so the previous application version remains compatible during the release window; destructive down migrations are not the primary rollback strategy. Data repair is performed with reviewed scripts and backups, never ad hoc production editing.
+Rollback the application to the previous known-good Vercel deployment. Keep migrations backward compatible through the release window; destructive down migrations are not the default recovery mechanism. Restore production data only from reviewed scripts and verified backups.

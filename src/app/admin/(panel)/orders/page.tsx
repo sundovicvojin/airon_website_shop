@@ -1,0 +1,5 @@
+import { AdminEmpty, AdminPageHeader, StatusPill } from "@/features/admin/components/admin-ui";
+import { getAdminOrders } from "@/features/admin/data";
+import { formatMoney } from "@/lib/money";
+
+export default async function OrdersPage(){const orders=await getAdminOrders();return <><AdminPageHeader description="Read-only until the production checkout phase." title="Orders"/>{orders.length?<div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Email</th><th>Date</th><th>Total</th><th>Order</th><th>Payment</th><th>Fulfillment</th><th>Shipping</th></tr></thead><tbody>{orders.map(order=><tr key={order.id}><td>{order.order_number}</td><td>{order.customers?`${order.customers.first_name} ${order.customers.last_name}`:"Guest"}</td><td>{order.email}</td><td>{new Date(order.created_at).toLocaleDateString()}</td><td>{formatMoney(order.total_amount,order.currency)}</td><td><StatusPill>{order.order_status}</StatusPill></td><td>{order.payment_status}</td><td>{order.fulfillment_status}</td><td>{order.shipping_status}</td></tr>)}</tbody></table></div>:<AdminEmpty>No orders yet.</AdminEmpty>}</>}

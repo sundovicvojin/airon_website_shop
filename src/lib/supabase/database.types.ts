@@ -1067,6 +1067,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_admin_roles: {
+        Args: never
+        Returns: Database["public"]["Enums"]["admin_role"][]
+      }
       search_public_products: {
         Args: {
           requested_locale?: string

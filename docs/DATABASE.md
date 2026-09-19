@@ -1,138 +1,69 @@
-# Database proposal
+# Database implementation
 
-This is a reviewed design proposal for Phase 4, not an applied migration. Initial production row counts for commerce/content tables remain zero.
+The versioned Supabase schema is implemented by five ordered migrations. A clean reset creates infrastructure only; all commerce/content row counts remain zero.
 
-## General conventions
+## Migrations
 
-- UUID primary keys generated in PostgreSQL.
-- `timestamptz` timestamps in UTC with `created_at` and `updated_at`.
-- Money stored as `bigint` minor units (`price_amount`) plus `char(3)` currency.
-- Case-insensitive unique values use `citext` where appropriate (email, coupon code).
-- Soft archival is preferred for referenced business records; hard deletion is allowed only when no history depends on the row.
-- Enums are used for stable state machines; check constraints are used for bounded numeric values.
-- Every foreign key has an intentional `ON DELETE` rule and matching index where queried.
+1. `202609190001_foundation.sql` — extensions, private schema, enums, shared timestamp trigger.
+2. `202609190002_identity_catalog_content.sql` — identity, catalogue, translations, batches, COA, banners, indexes, auth/profile trigger, role helper, and public search.
+3. `202609190003_commerce_architecture.sql` — customers, addresses, orders, snapshots, payments, coupons, and shipping.
+4. `202609190004_rls.sql` — grants and deny-by-default RLS policies for every application table.
+5. `202609190005_storage.sql` — controlled buckets, limits, MIME restrictions, and object policies.
 
-## Identity and roles
+## Enums
 
-### `profiles`
+- `product_stock_status`: `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`, `DISABLED`
+- `product_visibility`: `PUBLIC`, `HIDDEN`, `DRAFT`
+- `order_status`: `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`
+- `payment_status`: `PENDING`, `AUTHORIZED`, `PAID`, `FAILED`, `REFUNDED`, `PARTIALLY_REFUNDED`, `CANCELLED`
+- `fulfillment_status`: `UNFULFILLED`, `PROCESSING`, `FULFILLED`, `CANCELLED`
+- `shipping_status`: `NOT_REQUIRED`, `PENDING`, `READY`, `SHIPPED`, `DELIVERED`, `RETURNED`, `CANCELLED`
+- `coupon_type`: `PERCENTAGE`, `FIXED`
+- `admin_role`: `SUPER_ADMIN`, `ADMIN`, `ORDERS_MANAGER`, `CONTENT_MANAGER`
 
-`id` references `auth.users`, plus display name and timestamps. It does not duplicate password or auth secrets.
+## Tables and relationships
 
-### `roles`
+Identity uses `profiles` (1:1 with `auth.users`), `roles`, and `user_roles`. Role records are intentionally not seeded; Phase 5 needs a controlled bootstrap.
 
-Stable codes: `SUPER_ADMIN`, `ADMIN`, `ORDERS_MANAGER`, `CONTENT_MANAGER`.
+Catalogue/content uses `products`, `product_translations`, `product_specifications`, `product_specification_translations`, `product_images`, `categories`, `category_translations`, `product_categories`, `product_batches`, `coa_documents`, `banners`, and `banner_translations`. Strength variants are independent products. A composite COA foreign key ensures a selected batch belongs to the same product.
 
-### `user_roles`
+Commerce preparation uses `customers`, `addresses`, `orders`, `order_items`, `payments`, `coupons`, `coupon_redemptions`, `shipping_zones`, and `shipping_methods`. Guest customers are supported through nullable auth references. Orders retain address JSON snapshots; order items retain product name/SKU/strength/unit/price snapshots even if the product reference later becomes null.
 
-Unique `(user_id, role_id)` assignments with `assigned_by` and `created_at`. Bootstrap is performed through a controlled server/SQL process, never an email comparison.
+## Constraints
 
-## Catalogue
+- UUID primary keys and UTC `timestamptz` are consistent throughout.
+- Product slug is language-neutral and unique; optional SKU is case-insensitively unique.
+- Prices, stock, quantities, file sizes, sort values, percentages, and totals are range checked.
+- Compare price must exceed price; stock status and quantity cannot contradict one another.
+- Orders enforce `subtotal - discount + shipping + tax = total`.
+- Coupon checks make percentage and fixed configurations mutually valid.
+- Translation locales are constrained to `en` and `sr` and unique per parent.
+- A partial unique index allows at most one primary image per product.
+- Batch number is unique per product.
+- One reusable trigger maintains `updated_at`.
 
-### `products`
+## Money and translations
 
-Core fields: `id`, unique `slug`, `name`, `short_name`, `short_description`, `description`, `strength`, `unit`, `price_amount`, optional `compare_at_price_amount`, `currency`, unique `sku`, `stock_quantity`, `stock_status`, `featured`, `active`, `visibility`, `sort_order`, `main_image_path`, timestamps, and optional `archived_at`.
+Money is `bigint` minor units plus uppercase ISO currency: `6900` means EUR 69.00. Catalogue, coupons, shipping, orders, items, and payments never use floating point. V1 requires EUR.
 
-Constraints include non-negative amounts/stock, compare price validity, ISO currency format, and consistency between stock quantity/status. Index public catalogue queries on `(active, visibility, sort_order)`, `featured`, `created_at`, and searchable text. Strength variants remain separate product rows in V1.
+Localized copy is normalized into translation tables. Price, SKU, stock, visibility, and other business facts exist once on parent rows. Public services select the requested locale and fall back from Serbian to English. Slugs remain language-neutral.
 
-### `product_translations`
+## Indexes
 
-Unique `(product_id, locale)` with localised name, short name, descriptions, optional localised slug, SEO title, and SEO description. Price, SKU, stock, and status stay on `products`.
+Partial indexes match active/public and featured catalogue reads. Supporting indexes cover translations, ordered images/specifications, category joins, batches, public COA, scheduled banners, role membership, customer/order history, order/payment statuses, coupon redemption, and shipping methods. Unique constraints already index slugs, SKU, order number, email, coupon code, and provider identifiers.
 
-### `product_images`
+## Deletion and archival
 
-`product_id`, storage path, alt text, width/height, sort order, main flag, timestamps. Enforce only one primary image per product with a partial unique index.
+Referenced products/categories/content should be hidden or archived rather than casually deleted. Product/customer references from historical orders are nullable while snapshots preserve history. Order children cascade only with deliberate order deletion; operational retention rules must be approved before a production deletion workflow. Translation, image, and join rows cascade with their catalogue parent. COA replacement is versioned by an optional self-reference.
 
-### `categories` and `category_translations`
+## RLS and public/private access
 
-Category identity, visibility, order, archive state, and localised name/slug/description/SEO content.
+RLS is enabled on all 24 application tables. Public reads see only active, public, non-archived catalogue rows and related safe records. Public COA additionally requires `public_visible` and `active`, plus a public parent product. Public roles have no write grant to products or protected commerce tables.
 
-### `product_categories`
+Authenticated customers may read only records linked to their auth identity. Content roles manage catalogue/content; order roles manage commerce tables; admin roles cover profiles and assignments. `private.has_admin_role()` is a minimal `SECURITY DEFINER` helper with locked empty `search_path`, schema-qualified objects, and no broad public grant.
 
-Unique `(product_id, category_id)` join with optional per-category sort order.
+`search_public_products` is parameterized, bounded to 20 results, executes with caller permissions, and repeats active/public/archive predicates.
 
-## Quality records
+## Phase 5 integration
 
-### `product_batches`
-
-`product_id`, batch number, manufactured/test dates, optional purity decimal, active flag, timestamps. Batch number uniqueness is scoped deliberately after operations confirm whether a number can repeat across products.
-
-### `coa_documents`
-
-Optional `product_id` and `batch_id`, private storage path, original filename, MIME type, byte size, checksum, public visibility, status (`ACTIVE`, `ARCHIVED`), version/replacement reference, uploader, timestamps. Public access should use an authorised endpoint or signed URL rather than an open bucket.
-
-## Customers and addresses
-
-### `customers`
-
-Optional `auth_user_id`, normalised email, names, phone only if operationally required, locale, marketing-consent fields only if consent is actually implemented, and timestamps. Guest checkout creates/links records according to a documented deduplication policy.
-
-### `addresses`
-
-Customer reference when saved, address purpose, recipient, lines, city, region, postal code, ISO country code, phone if required, and timestamps. Orders copy immutable address snapshots; historical orders never depend on a mutable saved address.
-
-## Orders and payments
-
-### `orders`
-
-Unique order number, optional customer/auth references, email, locale, currency, subtotal/discount/shipping/tax/total minor units, coupon snapshot, payment/fulfilment/shipping/order statuses, billing/shipping JSON snapshots or dedicated snapshot tables, notes with visibility separation, idempotency key, timestamps.
-
-### `order_items`
-
-Order/product references, immutable SKU/name/strength/unit snapshots, unit price, quantity, line discount/tax/total amounts. Quantity and amounts are constrained non-negative/positive as appropriate.
-
-### `payments`
-
-Order, internal status, provider code, provider transaction reference, amount/currency, idempotency key, safely redacted provider metadata, paid/refunded timestamps. Unique provider event identifiers prevent replay.
-
-### `payment_events`
-
-Optional but recommended for webhook audit/idempotency: provider, unique event ID, event type, verification/processing status, payload hash or redacted payload, timestamps, error. Retention policy must be documented.
-
-## Shipping
-
-### `shipping_zones`
-
-Codes initially support `SERBIA`, `EU`, `INTERNATIONAL`, with active flag and priority. No rates are seeded.
-
-### `shipping_zone_countries`
-
-Maps ISO country codes to zones and prevents ambiguous active assignments.
-
-### `shipping_methods`
-
-Zone reference, code/name, flat rate amount/currency, optional free threshold, active flag, delivery estimate fields, priority, timestamps. Frontend never hardcodes these values.
-
-## Promotions
-
-### `coupons`
-
-Case-insensitive unique code, type (`PERCENTAGE`, `FIXED`), value, currency when fixed, minimum order, starts/expires, usage limit, per-customer limit if adopted, active flag, timestamps. Percentage is bounded; fixed amount is non-negative.
-
-### `coupon_redemptions`
-
-Coupon/order/customer references and redeemed timestamp, supporting transactional usage-limit enforcement.
-
-## Content
-
-### `banners`
-
-Stable placement key, active/scheduling fields, optional asset path/link, priority, timestamps.
-
-### `banner_translations`
-
-Localised eyebrow/title/body/CTA label and accessible image alt text. Keep this narrow; AIRON does not need a full CMS in V1.
-
-## RLS outline
-
-- Enable RLS on every exposed table.
-- Anonymous/authenticated public roles may select only active, visible catalogue/content rows and only safe columns/views.
-- Customers may access only records explicitly linked to their auth identity; guest order lookup requires a separate secure flow and must not rely on guessable order numbers.
-- Admin policies derive permissions from `user_roles`; UI visibility is never the security boundary.
-- Service-role use is limited to server-side operational tasks and does not replace normal user-context policies without justification.
-- Storage policies separate public marketing/product images from private COA documents.
-
-RLS tests must cover positive and negative cases for anonymous, customer, each admin role, and revoked users.
-
-## Deletion policy
-
-Products referenced by orders are archived, not deleted. Orders, payment records, and item snapshots follow statutory retention rules once known. Unreferenced draft catalogue/content records may be hard-deleted by authorised roles. Customer erasure must distinguish removable profile data from legally required order records.
+Phase 5 can add admin CRUD without redesigning storefront routes. It must add a controlled first-role bootstrap, validate uploads server-side, write translations and relationships transactionally, and invalidate future catalogue cache tags. UI visibility is convenience only; RLS and server permission helpers remain authoritative.

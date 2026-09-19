@@ -1,0 +1,5 @@
+import { AdminEmpty, AdminPageHeader } from "@/features/admin/components/admin-ui";
+import { getAdminCustomers } from "@/features/admin/data";
+import { formatMoney } from "@/lib/money";
+
+export default async function CustomersPage(){const customers=await getAdminCustomers();return <><AdminPageHeader description="Read-only customer summary with minimum personal data." title="Customers"/>{customers.length?<div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Orders</th><th>Total spent</th><th>Last order</th></tr></thead><tbody>{customers.map(customer=>{const valid=customer.orders.filter(order=>order.order_status!=="CANCELLED");const last=[...customer.orders].sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];return <tr key={customer.id}><td>{customer.first_name} {customer.last_name}</td><td>{customer.email}</td><td>{customer.orders.length}</td><td>{formatMoney(valid.reduce((sum,order)=>sum+order.total_amount,0))}</td><td>{last?new Date(last.created_at).toLocaleDateString():"—"}</td></tr>})}</tbody></table></div>:<AdminEmpty>No customers yet.</AdminEmpty>}</>}

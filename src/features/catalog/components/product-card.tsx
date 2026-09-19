@@ -41,6 +41,7 @@ export function ProductCard({ addToCart, copy, developmentPreview = false, href,
           placeholder={typeof product.image === "string" ? "empty" : "blur"}
           sizes="(max-width: 767px) 92vw, (max-width: 1279px) 45vw, 32vw"
           src={product.image}
+          unoptimized={typeof product.image === "string" && /^http:\/\/(127\.0\.0\.1|localhost):/.test(product.image)}
         /> : <div aria-label={product.imageAlt} className="product-card__image-placeholder" role="img">AIRON</div>}
         {developmentPreview ? <span className="product-card__preview">{copy.previewOnly}</span> : null}
         <span className="product-card__index">A — 01</span>

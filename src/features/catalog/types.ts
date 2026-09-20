@@ -13,6 +13,7 @@ export type ProductCardModel = Readonly<{
   priceAmount: number;
   shortName?: string;
   slug: string;
+  stockQuantity?: number;
   stockState: ProductStockState;
   strength: string;
   unit?: string;

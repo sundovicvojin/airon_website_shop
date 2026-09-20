@@ -10,6 +10,7 @@ const developmentProductFixture: ProductCardModel = {
   name: "Formula 01 — Design Study",
   priceAmount: 12800,
   slug: "development-visual-study-01",
+  stockQuantity: 0,
   stockState: "IN_STOCK",
   strength: "10 MG",
   unit: "VIAL",

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { CartProvider } from "@/features/cart/cart-context";
 import { getDictionary } from "@/i18n/dictionaries";
 import { isLocale } from "@/i18n/config";
 
@@ -21,10 +22,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const copy = await getDictionary(locale);
 
   return (
-    <>
+    <CartProvider>
       <SiteHeader cartCopy={copy.cart} copy={copy.header} locale={locale} searchCopy={copy.search} />
       {children}
       <SiteFooter copy={copy.footer} locale={locale} />
-    </>
+    </CartProvider>
   );
 }

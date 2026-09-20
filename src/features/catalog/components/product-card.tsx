@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { ArrowIcon } from "@/components/icons/site-icons";
+import { useCart } from "@/features/cart/cart-context";
+import { isPurchasableProduct } from "@/features/cart/eligibility";
 import type { ProductCardModel, ProductStockState } from "@/features/catalog/types";
 import type { Locale } from "@/i18n/config";
 
@@ -23,6 +25,7 @@ type ProductCardProps = Readonly<{
 }>;
 
 export function ProductCard({ addToCart, copy, developmentPreview = false, href, locale, product }: ProductCardProps) {
+  const cart = useCart();
   const price = new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-IE", {
     currency: product.currency,
     style: "currency",
@@ -30,7 +33,10 @@ export function ProductCard({ addToCart, copy, developmentPreview = false, href,
   const comparePrice = product.comparePriceAmount
     ? new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-IE", { currency: product.currency, style: "currency" }).format(product.comparePriceAmount / 100)
     : null;
-  const disabled = !addToCart || product.stockState === "OUT_OF_STOCK" || product.stockState === "DISABLED";
+  const disabled = developmentPreview || !isPurchasableProduct(product);
+  const handleAdd = addToCart ?? (() => {
+    if (cart.addItem({ currency: product.currency, id: product.id, name: product.name, priceAmount: product.priceAmount, slug: product.slug, stockQuantity: product.stockQuantity ?? 0, stockState: product.stockState, strength: product.strength, unit: product.unit })) cart.openCart();
+  });
 
   const media = (
     <div className="product-card__media">
@@ -65,7 +71,7 @@ export function ProductCard({ addToCart, copy, developmentPreview = false, href,
 
       <div className="product-card__commerce">
         <p>{price}{comparePrice ? <del className="ml-2 text-ink-subtle">{comparePrice}</del> : null}</p>
-        <button aria-label={copy.addToCart} disabled={disabled} onClick={addToCart} type="button">
+        <button aria-label={copy.addToCart} disabled={disabled} onClick={handleAdd} type="button">
           {copy.addToCart}
           <ArrowIcon className="size-4" />
         </button>

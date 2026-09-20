@@ -26,7 +26,7 @@ export type PublicCatalogResult = Readonly<{ products: readonly ProductCardModel
 type ProductRow = Readonly<{
   id: string; slug: string; strength: string; unit: string; price_amount: number;
   compare_at_price_amount: number | null; stock_status: ProductCardModel["stockState"];
-  featured: boolean; created_at: string;
+  stock_quantity: number; featured: boolean; created_at: string;
 }>;
 
 type TranslationRow = Readonly<{
@@ -62,6 +62,11 @@ export async function getPublicProducts(input: {
     if (query.length >= 2) {
       const { data, error } = await client.rpc("search_public_products", { search_term: query, requested_locale: locale, result_limit: limit });
       if (error) return failure(new AppError("INTERNAL_ERROR", "Unable to search the public catalogue.", { cause: error }));
+      const { data: inventory, error: inventoryError } = data.length
+        ? await client.from("products").select("id, stock_quantity").in("id", data.map((row) => row.id))
+        : { data: [], error: null };
+      if (inventoryError) return failure(new AppError("INTERNAL_ERROR", "Unable to load product availability.", { cause: inventoryError }));
+      const quantities = new Map((inventory ?? []).map((row) => [row.id, row.stock_quantity]));
       const imagePaths = data.flatMap((row) => row.image_path ? [row.image_path] : []);
       const signed = await signStoragePaths(client, "product-images", imagePaths);
       const products = data.map<ProductCardModel>((row) => ({
@@ -75,6 +80,7 @@ export async function getPublicProducts(input: {
         priceAmount: row.price_amount,
         shortName: row.short_name ?? undefined,
         slug: row.slug,
+        stockQuantity: quantities.get(row.id) ?? 0,
         stockState: row.stock_status,
         strength: row.strength,
         unit: row.unit,
@@ -83,7 +89,7 @@ export async function getPublicProducts(input: {
     }
 
     let productQuery = client.from("products").select(
-      "id, slug, strength, unit, price_amount, compare_at_price_amount, stock_status, featured, created_at",
+      "id, slug, strength, unit, price_amount, compare_at_price_amount, stock_quantity, stock_status, featured, created_at",
       { count: "exact" },
     ).eq("active", true).eq("visibility", "PUBLIC").is("archived_at", null);
 
@@ -125,7 +131,7 @@ export async function getPublicProducts(input: {
         image: image ? signed.get(image.storage_path) ?? null : null,
         imageAlt: image?.alt_text ?? `${translation.name} — AIRON`, name: translation.name,
         priceAmount: product.price_amount, shortName: translation.short_name ?? undefined,
-        slug: product.slug, stockState: product.stock_status, strength: product.strength, unit: product.unit,
+        slug: product.slug, stockQuantity: product.stock_quantity, stockState: product.stock_status, strength: product.strength, unit: product.unit,
       }];
     });
     return success({ products: mapped, total: count ?? mapped.length });
@@ -144,7 +150,7 @@ export async function getPublicProductBySlug(slug: string, locale: Locale): Prom
 
   try {
     const client = await createSupabaseServerClient();
-    const { data: product, error } = await client.from("products").select("id, slug, strength, unit, price_amount, compare_at_price_amount, stock_status, featured, created_at").eq("slug", slug).eq("active", true).eq("visibility", "PUBLIC").is("archived_at", null).maybeSingle();
+    const { data: product, error } = await client.from("products").select("id, slug, strength, unit, price_amount, compare_at_price_amount, stock_quantity, stock_status, featured, created_at").eq("slug", slug).eq("active", true).eq("visibility", "PUBLIC").is("archived_at", null).maybeSingle();
     if (error) return failure(new AppError("INTERNAL_ERROR", "Unable to load the product.", { cause: error }));
     if (!product) return success(null);
 
@@ -192,7 +198,7 @@ export async function getPublicProductBySlug(slug: string, locale: Locale): Prom
       imageAlt: primaryImage?.alt_text ?? `${translation.name} — AIRON`, name: translation.name,
       priceAmount: product.price_amount, shippingInformation: translation.shipping_information ?? "",
       shortDescription: translation.short_description ?? "", shortName: translation.short_name ?? undefined,
-      slug: product.slug, specifications, stockState: product.stock_status,
+      slug: product.slug, specifications, stockQuantity: product.stock_quantity, stockState: product.stock_status,
       storageInformation: translation.storage_information ?? "", strength: product.strength, unit: product.unit,
     });
   } catch (cause) {

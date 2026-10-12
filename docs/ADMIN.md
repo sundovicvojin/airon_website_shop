@@ -11,6 +11,7 @@ The protected admin area uses one functional layout:
 - `/admin/orders`, `/admin/customers`
 - `/admin/inquiries`, `/admin/inquiries/[id]` (capability `inquiries.manage`: SUPER_ADMIN, ADMIN, ORDERS_MANAGER)
 - `/admin/login` and `/admin/forbidden`
+- `/admin/forgot-password`, `/admin/reset-password` and `/auth/confirm` (public password-reset flow, see below)
 
 Every protected page and every mutation repeats server-side authentication and capability authorization.
 
@@ -49,6 +50,44 @@ commit;
 ```
 
 Verify access, then record the operator and time in the deployment log. Never commit a password, UUID, or email-based authorization rule.
+
+## Reset šifre
+
+Flow: `/admin/login` → "Zaboravljena šifra?" → `/admin/forgot-password` → email → link → `/admin/reset-password` → `/admin/login?notice=password-changed`.
+
+### Routes
+
+- `/admin/forgot-password`: server action `requestPasswordReset` calls `resetPasswordForEmail` with `redirectTo = NEXT_PUBLIC_SITE_URL + /admin/reset-password`. The answer is always "Ako nalog postoji, poslali smo uputstvo na mejl." so accounts cannot be discovered.
+- `/auth/confirm`: server route for the `token_hash` link. Verifies the OTP (`type=recovery` only), sets the session cookies and redirects to `/admin/reset-password?verified=1`. The `next` parameter is ignored; the destination is fixed.
+- `/admin/reset-password`: client form (min 12 characters, confirmation, show/hide). It accepts all three link types, cleans the URL (`history.replaceState`) before any request, then calls `updateUser({ password })` and `signOut({ scope: "global" })`, which revokes every session of the account.
+
+All three are public: they live outside the `(panel)` layout, so `requireAdmin` does not run, and `src/proxy.ts` only refreshes the session cookie. Resetting a password grants no roles; roles stay in `user_roles`.
+
+### Supported link types
+
+1. `token_hash` via `/auth/confirm` (recommended; works when the email is opened on another device).
+2. `?code=` (PKCE). The request and the click must happen in the same browser.
+3. `#access_token=…&type=recovery` (implicit, e.g. the dashboard's "Send password recovery"). Parsed manually, since `@supabase/ssr` uses PKCE.
+
+### Supabase configuration
+
+Authentication → URL Configuration:
+
+- Site URL: the production `NEXT_PUBLIC_SITE_URL` (for example `https://airon-tau.vercel.app`).
+- Redirect URLs: `https://<production-domain>/admin/reset-password`, `https://<production-domain>/auth/confirm`, and for local development `http://localhost:3000/admin/reset-password` and `http://localhost:3000/auth/confirm`. Add preview domains only if you test resets there.
+
+Authentication → Emails → "Reset Password" template (enables the `token_hash` flow; `supabase/templates/recovery.html` contains the same):
+
+```html
+<h2>Reset lozinke</h2>
+<p>Pratite link da biste postavili novu šifru:</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/admin/reset-password">Postavi novu šifru</a></p>
+<p>Ako niste tražili reset, ignorišite ovaj mejl.</p>
+```
+
+Some mail scanners open links automatically and consume a one-time token; if admins report "Link je istekao" immediately, ask for a new link and open it from the mail client directly.
+
+`NEXT_PUBLIC_SITE_URL` must be set in every environment; redeploy after changing it because it is inlined at build time.
 
 ## Product publishing
 

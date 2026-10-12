@@ -403,6 +403,59 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiries: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          internal_note: string | null
+          ip_hash: string | null
+          locale: string
+          message: string
+          name: string
+          phone: string | null
+          product_id: string | null
+          product_name: string | null
+          status: Database["public"]["Enums"]["inquiry_status"]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          internal_note?: string | null
+          ip_hash?: string | null
+          locale: string
+          message: string
+          name: string
+          phone?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          status?: Database["public"]["Enums"]["inquiry_status"]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          internal_note?: string | null
+          ip_hash?: string | null
+          locale?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          status?: Database["public"]["Enums"]["inquiry_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -1103,6 +1156,7 @@ export type Database = {
         | "PROCESSING"
         | "FULFILLED"
         | "CANCELLED"
+      inquiry_status: "NEW" | "IN_PROGRESS" | "ANSWERED" | "CLOSED" | "SPAM"
       order_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
       payment_status:
         | "PENDING"
@@ -1261,6 +1315,7 @@ export const Constants = {
         "FULFILLED",
         "CANCELLED",
       ],
+      inquiry_status: ["NEW", "IN_PROGRESS", "ANSWERED", "CLOSED", "SPAM"],
       order_status: ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"],
       payment_status: [
         "PENDING",

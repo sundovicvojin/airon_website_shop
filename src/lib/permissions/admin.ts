@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export type AdminRole = Database["public"]["Enums"]["admin_role"];
 
 export const adminCapabilities = {
+  "inquiries.manage": ["SUPER_ADMIN", "ADMIN", "ORDERS_MANAGER"],
   manageCatalog: ["SUPER_ADMIN", "ADMIN", "CONTENT_MANAGER"],
   manageOrders: ["SUPER_ADMIN", "ADMIN", "ORDERS_MANAGER"],
   managePromotions: ["SUPER_ADMIN", "ADMIN"],
@@ -16,6 +17,10 @@ export const adminCapabilities = {
 } as const satisfies Record<string, readonly AdminRole[]>;
 
 export type AdminCapability = keyof typeof adminCapabilities;
+
+export function rolesHaveCapability(roles: readonly AdminRole[], capability: AdminCapability) {
+  return roles.some((role) => (adminCapabilities[capability] as readonly AdminRole[]).includes(role));
+}
 
 export async function getCurrentAdminRoles(): Promise<readonly AdminRole[]> {
   const client = await createSupabaseServerClient();

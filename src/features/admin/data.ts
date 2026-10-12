@@ -1,15 +1,18 @@
 import "server-only";
 
-import { requireAdmin, type AdminCapability } from "@/lib/permissions/admin";
+import { requireAdmin, rolesHaveCapability, type AdminCapability } from "@/lib/permissions/admin";
 
 export async function getDashboardData() {
-  const { client } = await requireAdmin();
-  const [products, orders, customers, lowStock, recentOrders] = await Promise.all([
+  const { client, roles } = await requireAdmin();
+  const canSeeInquiries = rolesHaveCapability(roles, "inquiries.manage");
+  const [products, orders, customers, lowStock, recentOrders, newInquiries, recentInquiries] = await Promise.all([
     client.from("products").select("id", { count: "exact", head: true }),
     client.from("orders").select("id,total_amount,order_status", { count: "exact" }),
     client.from("customers").select("id", { count: "exact", head: true }),
     client.from("products").select("id,slug,strength,stock_quantity,stock_status,product_translations(locale,name)").in("stock_status", ["LOW_STOCK", "OUT_OF_STOCK"]).is("archived_at", null).order("stock_quantity").limit(6),
     client.from("orders").select("id,order_number,email,total_amount,currency,order_status,created_at").order("created_at", { ascending: false }).limit(6),
+    canSeeInquiries ? client.from("inquiries").select("id", { count: "exact", head: true }).eq("status", "NEW") : null,
+    canSeeInquiries ? client.from("inquiries").select("id,name,product_name,status,created_at").order("created_at", { ascending: false }).limit(5) : null,
   ]);
   const orderRows = orders.data ?? [];
   const statusSummary = orderRows.reduce<Record<string, number>>((summary, order) => ({ ...summary, [order.order_status]: (summary[order.order_status] ?? 0) + 1 }), {});
@@ -17,6 +20,7 @@ export async function getDashboardData() {
     products: products.count ?? 0, orders: orders.count ?? orderRows.length, customers: customers.count ?? 0,
     revenue: orderRows.filter((order) => order.order_status !== "CANCELLED").reduce((sum, order) => sum + order.total_amount, 0),
     lowStock: lowStock.data ?? [], recentOrders: recentOrders.data ?? [], statusSummary,
+    canSeeInquiries, newInquiries: newInquiries?.count ?? 0, recentInquiries: recentInquiries?.data ?? [],
   };
 }
 

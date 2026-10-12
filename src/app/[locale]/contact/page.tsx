@@ -13,9 +13,11 @@ export default async function ContactPage({ params, searchParams }: PageProps<"/
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   if (!isLocale(locale)) notFound();
   const { contact } = await getDictionary(locale);
-  // The subject is prefilled only from a real published product: the slug is validated and the name comes from the database, never from the URL.
+  // Only a real published product is shown: the slug is validated and the name comes from the database, never from the URL.
   const slug = productParamSchema.safeParse(Array.isArray(query.product) ? query.product[0] : query.product);
-  const product = slug.success ? await getPublicProductBySlug(slug.data, locale) : null;
-  const productName = product?.ok && product.value ? product.value.name : null;
-  return <EditorialPage eyebrow={contact.eyebrow} intro={contact.intro} title={contact.title}><ContactForm copy={contact} defaultSubject={productName ? `${contact.inquiryPrefix}: ${productName}` : ""} /></EditorialPage>;
+  const result = slug.success ? await getPublicProductBySlug(slug.data, locale) : null;
+  const product = result?.ok ? result.value : null;
+  return <EditorialPage eyebrow={contact.eyebrow} intro={contact.intro} title={contact.title}>
+    <ContactForm copy={contact} locale={locale} productName={product?.name} productSlug={product?.slug} turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined} />
+  </EditorialPage>;
 }

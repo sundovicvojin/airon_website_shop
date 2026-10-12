@@ -25,7 +25,7 @@ export type Dictionary = {
   qualityPage: { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[]; editable: string };
   verificationPage: { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[]; notice: string };
   about: { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[] };
-  contact: { inquiryPrefix: string; eyebrow: string; title: string; intro: string; name: string; email: string; subject: string; message: string; submit: string; disabled: string; required: string; invalidEmail: string };
+  contact: { eyebrow: string; title: string; intro: string; name: string; email: string; phone: string; phoneOptional: string; message: string; productLabel: string; submit: string; sending: string; success: string; rateLimited: string; captchaFailed: string; unavailable: string; privacyNote: string; required: string; tooShort: string; tooLong: string; invalidEmail: string; invalidPhone: string };
   legal: Record<"terms" | "privacy" | "cookies" | "shipping" | "returns" | "disclaimer", { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[] }>;
   notFound: { eyebrow: string; title: string; description: string };
   error: { eyebrow: string; title: string; description: string; retry: string };

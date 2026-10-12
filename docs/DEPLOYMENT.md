@@ -8,6 +8,8 @@ Use separate local, staging, and production Supabase projects and separate Verce
 
 Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_SITE_URL` per environment. Add `SUPABASE_SERVICE_ROLE_KEY` only to server-side secrets when privileged operations are deployed. Never prefix it with `NEXT_PUBLIC_`, expose it in browser code, or print it in logs.
 
+Contact inquiries additionally need `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `IP_HASH_SALT`, `RESEND_API_KEY`, `INQUIRY_NOTIFY_EMAIL`, and `INQUIRY_FROM_EMAIL`; see `docs/INQUIRIES.md`. Production rejects inquiries without the Turnstile secret and IP salt.
+
 ## Release gate
 
 ```bash

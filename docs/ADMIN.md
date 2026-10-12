@@ -9,6 +9,7 @@ The protected admin area uses one functional layout:
 - `/admin/categories`, `/admin/batches`, `/admin/coa`
 - `/admin/coupons`, `/admin/banners`
 - `/admin/orders`, `/admin/customers`
+- `/admin/inquiries`, `/admin/inquiries/[id]` (capability `inquiries.manage`: SUPER_ADMIN, ADMIN, ORDERS_MANAGER)
 - `/admin/login` and `/admin/forbidden`
 
 Every protected page and every mutation repeats server-side authentication and capability authorization.

@@ -710,7 +710,8 @@ textarea {
   font-size: 0.8125rem;
 }
 
-.product-card__commerce button {
+.product-card__commerce button,
+.product-card__quote {
   display: flex;
   align-items: center;
   gap: 1rem;

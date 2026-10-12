@@ -11,6 +11,8 @@ import type { Locale } from "@/i18n/config";
 
 type ProductCardCopy = Readonly<{
   addToCart: string;
+  priceOnRequest: string;
+  requestQuote: string;
   previewOnly: string;
   stock: Record<ProductStockState, string>;
 }>;
@@ -26,11 +28,11 @@ type ProductCardProps = Readonly<{
 
 export function ProductCard({ addToCart, copy, developmentPreview = false, href, locale, product }: ProductCardProps) {
   const cart = useCart();
-  const price = new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-IE", {
+  const price = product.priceAmount === null ? copy.priceOnRequest : new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-IE", {
     currency: product.currency,
     style: "currency",
   }).format(product.priceAmount / 100);
-  const comparePrice = product.comparePriceAmount
+  const comparePrice = product.priceAmount !== null && product.comparePriceAmount
     ? new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-IE", { currency: product.currency, style: "currency" }).format(product.comparePriceAmount / 100)
     : null;
   const disabled = developmentPreview || !isPurchasableProduct(product);
@@ -71,10 +73,17 @@ export function ProductCard({ addToCart, copy, developmentPreview = false, href,
 
       <div className="product-card__commerce">
         <p>{price}{comparePrice ? <del className="ml-2 text-ink-subtle">{comparePrice}</del> : null}</p>
-        <button aria-label={copy.addToCart} disabled={disabled} onClick={handleAdd} type="button">
-          {copy.addToCart}
-          <ArrowIcon className="size-4" />
-        </button>
+        {product.priceAmount === null && !developmentPreview ? (
+          <Link className="product-card__quote" href={`/${locale}/contact?product=${encodeURIComponent(product.slug)}`}>
+            {copy.requestQuote}
+            <ArrowIcon className="size-4" />
+          </Link>
+        ) : (
+          <button aria-label={copy.addToCart} disabled={disabled} onClick={handleAdd} type="button">
+            {copy.addToCart}
+            <ArrowIcon className="size-4" />
+          </button>
+        )}
       </div>
     </article>
   );

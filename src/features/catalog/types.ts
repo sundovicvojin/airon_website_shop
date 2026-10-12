@@ -10,7 +10,8 @@ export type ProductCardModel = Readonly<{
   image: StaticImageData | string | null;
   imageAlt: string;
   name: string;
-  priceAmount: number;
+  /** null = price on request; the product cannot be bought online. */
+  priceAmount: number | null;
   shortName?: string;
   slug: string;
   stockQuantity?: number;

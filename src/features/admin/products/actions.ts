@@ -15,7 +15,7 @@ const optionalText = z.string().trim().transform(value => value || null);
 const productSchema = z.object({
   slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens."),
   sku: optionalText.pipe(z.string().max(80).nullable()), strength: z.string().trim().min(1).max(80), unit: z.string().trim().min(1).max(40),
-  price: z.string().refine(value => parseMoneyInput(value) !== null, "Enter a valid EUR amount."),
+  price: z.string().trim(),
   comparePrice: z.string().trim(), stockQuantity: z.coerce.number().int().min(0),
   stockStatus: z.enum(["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK", "DISABLED"]),
   visibility: z.enum(["PUBLIC", "HIDDEN", "DRAFT"]), sortOrder: z.coerce.number().int(),
@@ -23,10 +23,13 @@ const productSchema = z.object({
   enName: z.string().trim().min(1).max(180), enShortName: optionalText, enShortDescription: optionalText, enDescription: optionalText,
   srName: optionalText, srShortName: optionalText, srShortDescription: optionalText, srDescription: optionalText,
 }).superRefine((value, context) => {
-  const price = parseMoneyInput(value.price) ?? 0;
+  // An empty price means "Price on request" and is stored as NULL, never 0.
+  const price = value.price ? parseMoneyInput(value.price) : null;
   const compare = value.comparePrice ? parseMoneyInput(value.comparePrice) : null;
+  if (value.price && price === null) context.addIssue({ code: "custom", path: ["price"], message: "Enter a valid EUR amount." });
   if (value.comparePrice && compare === null) context.addIssue({ code: "custom", path: ["comparePrice"], message: "Enter a valid EUR amount." });
-  if (compare !== null && compare <= price) context.addIssue({ code: "custom", path: ["comparePrice"], message: "Compare price must exceed price." });
+  else if (compare !== null && price === null) context.addIssue({ code: "custom", path: ["comparePrice"], message: "Compare price requires a price." });
+  else if (compare !== null && price !== null && compare <= price) context.addIssue({ code: "custom", path: ["comparePrice"], message: "Compare price must exceed price." });
   if (value.stockStatus === "OUT_OF_STOCK" && value.stockQuantity !== 0) context.addIssue({ code: "custom", path: ["stockQuantity"], message: "Out-of-stock quantity must be zero." });
   if (["IN_STOCK", "LOW_STOCK"].includes(value.stockStatus) && value.stockQuantity < 1) context.addIssue({ code: "custom", path: ["stockQuantity"], message: "Available products need positive stock." });
 });
@@ -47,7 +50,7 @@ async function saveProduct(productId: string | null, _state: AdminActionState, f
   if (!parsed.success) return { success: false, message: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
   const { client } = await requireAdmin("manageCatalog");
   const input = parsed.data;
-  const core = { slug: input.slug, sku: input.sku, strength: input.strength, unit: input.unit, price_amount: parseMoneyInput(input.price)!, compare_at_price_amount: input.comparePrice ? parseMoneyInput(input.comparePrice) : null, stock_quantity: input.stockQuantity, stock_status: input.stockStatus, visibility: input.visibility, active: input.active, featured: input.featured, sort_order: input.sortOrder };
+  const core = { slug: input.slug, sku: input.sku, strength: input.strength, unit: input.unit, price_amount: input.price ? parseMoneyInput(input.price) : null, compare_at_price_amount: input.comparePrice ? parseMoneyInput(input.comparePrice) : null, stock_quantity: input.stockQuantity, stock_status: input.stockStatus, visibility: input.visibility, active: input.active, featured: input.featured, sort_order: input.sortOrder };
   let id = productId;
   if (id) {
     const { error } = await client.from("products").update(core).eq("id", id);

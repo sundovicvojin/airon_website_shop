@@ -8,14 +8,17 @@ import type { CartLine, CartProduct } from "@/features/cart/types";
 
 const storageKey = "airon-cart-v1";
 const cartLineSchema = z.object({
-  currency: z.literal("EUR"), id: z.string().min(1), name: z.string().min(1), priceAmount: z.number().int().nonnegative(),
+  currency: z.literal("EUR"), id: z.string().min(1), name: z.string().min(1), priceAmount: z.number().int().nonnegative().nullable(),
   quantity: z.number().int().positive(), slug: z.string().min(1), stockQuantity: z.number().int().nonnegative(),
   stockState: z.enum(["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK", "DISABLED"]), strength: z.string(), unit: z.string().optional(),
 });
-const storedCartSchema = z.array(cartLineSchema).max(100);
+const storedCartSchema = z.array(z.unknown()).max(100);
+
+type CartProductInput = Readonly<Omit<CartProduct, "priceAmount"> & { priceAmount: number | null }>;
 
 type CartContextValue = Readonly<{
-  addItem: (product: CartProduct, quantity?: number) => boolean;
+  /** Returns false (and adds nothing) for products without a price or without stock. */
+  addItem: (product: CartProductInput, quantity?: number) => boolean;
   closeCart: () => void;
   count: number;
   decreaseItem: (id: string) => void;
@@ -34,7 +37,13 @@ function readStoredCart() {
     const raw = window.localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = storedCartSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data.filter(isPurchasableProduct).map((line) => ({ ...line, quantity: Math.min(line.quantity, line.stockQuantity) })) : [];
+    if (!parsed.success) return [];
+    // Validate line by line so one stale or unpriced (price on request) line never discards the rest of the cart.
+    return parsed.data.flatMap<CartLine>((entry) => {
+      const line = cartLineSchema.safeParse(entry);
+      if (!line.success || line.data.priceAmount === null || !isPurchasableProduct(line.data)) return [];
+      return [{ ...line.data, priceAmount: line.data.priceAmount, quantity: Math.min(line.data.quantity, line.data.stockQuantity) }];
+    });
   } catch {
     return [];
   }
@@ -57,8 +66,9 @@ export function CartProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (loaded) window.localStorage.setItem(storageKey, JSON.stringify(lines));
   }, [lines, loaded]);
 
-  const addItem = useCallback((product: CartProduct, quantity = 1) => {
-    if (!isPurchasableProduct(product) || quantity < 1) return false;
+  const addItem = useCallback((input: CartProductInput, quantity = 1) => {
+    if (input.priceAmount === null || !isPurchasableProduct(input) || quantity < 1) return false;
+    const product: CartProduct = { ...input, priceAmount: input.priceAmount };
     setLines((current) => {
       const existing = current.find((line) => line.id === product.id);
       if (!existing) return [...current, { ...product, quantity: Math.min(quantity, product.stockQuantity) }];

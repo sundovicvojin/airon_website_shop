@@ -6,6 +6,8 @@ import type { Locale } from "@/i18n/config";
 
 export type ProductPreviewCopy = Readonly<{
   addToCart: string;
+  priceOnRequest: string;
+  requestQuote: string;
   description: string;
   eyebrow: string;
   previewOnly: string;

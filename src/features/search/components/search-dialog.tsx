@@ -7,7 +7,7 @@ import { CloseIcon, SearchIcon } from "@/components/icons/site-icons";
 import type { Dictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/config";
 
-type SearchResult = Readonly<{ id: string; slug: string; name: string; strength: string; unit?: string }>;
+type SearchResult = Readonly<{ id: string; slug: string; name: string; strength: string; unit?: string; priceAmount: number | null; currency: string }>;
 type SearchDialogProps = Readonly<{ copy: Dictionary["search"]; instanceId: string; locale: Locale; triggerLabel: string }>;
 
 export function SearchDialog({ copy, instanceId, locale, triggerLabel }: SearchDialogProps) {
@@ -55,7 +55,7 @@ export function SearchDialog({ copy, instanceId, locale, triggerLabel }: SearchD
         <div className="search-dialog__field"><SearchIcon className="size-6" /><input autoFocus id={`${instanceId}-input`} onChange={(event) => void search(event.target.value)} placeholder={copy.placeholder} type="search" value={query} /></div>
         <div aria-live="polite" className="search-dialog__empty">
           <span className="section-index">{loading ? "SEARCHING" : `CATALOGUE / ${String(results.length).padStart(3, "0")}`}</span>
-          {results.length ? <div className="search-results">{results.map((product) => <Link href={`/${locale}/products/${product.slug}`} key={product.id} onClick={() => setOpen(false)}><span>{product.name}</span><small>{product.strength} {product.unit}</small></Link>)}</div> : <><h2>{copy.emptyTitle}</h2><p>{copy.emptyDescription}</p></>}
+          {results.length ? <div className="search-results">{results.map((product) => <Link href={`/${locale}/products/${product.slug}`} key={product.id} onClick={() => setOpen(false)}><span>{product.name}</span><small>{product.strength} {product.unit} · {product.priceAmount === null ? copy.priceOnRequest : new Intl.NumberFormat(locale === "sr" ? "sr-Latn-RS" : "en-IE", { currency: product.currency, style: "currency" }).format(product.priceAmount / 100)}</small></Link>)}</div> : <><h2>{copy.emptyTitle}</h2><p>{copy.emptyDescription}</p></>}
         </div>
       </div>
       <p className="search-dialog__hint">{copy.hint}</p>

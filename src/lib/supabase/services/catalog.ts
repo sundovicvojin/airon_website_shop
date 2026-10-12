@@ -24,7 +24,7 @@ const catalogQuerySchema = z.object({
 export type PublicCatalogResult = Readonly<{ products: readonly ProductCardModel[]; total: number }>;
 
 type ProductRow = Readonly<{
-  id: string; slug: string; strength: string; unit: string; price_amount: number;
+  id: string; slug: string; strength: string; unit: string; price_amount: number | null;
   compare_at_price_amount: number | null; stock_status: ProductCardModel["stockState"];
   stock_quantity: number; featured: boolean; created_at: string;
 }>;
@@ -44,8 +44,10 @@ function chooseTranslation(rows: readonly TranslationRow[], productId: string, l
 }
 
 function sortProducts(products: ProductCardModel[], sort: CatalogSort) {
-  if (sort === "price-asc") products.sort((a, b) => a.priceAmount - b.priceAmount);
-  if (sort === "price-desc") products.sort((a, b) => b.priceAmount - a.priceAmount);
+  // Products without a price (price on request) always sort last.
+  const rank = (product: ProductCardModel, direction: 1 | -1) => product.priceAmount === null ? Number.POSITIVE_INFINITY : product.priceAmount * direction;
+  if (sort === "price-asc") products.sort((a, b) => rank(a, 1) - rank(b, 1) || 0);
+  if (sort === "price-desc") products.sort((a, b) => rank(a, -1) - rank(b, -1) || 0);
   return products;
 }
 
@@ -102,8 +104,8 @@ export async function getPublicProducts(input: {
 
     if (featuredOnly) productQuery = productQuery.eq("featured", true);
     if (sort === "newest") productQuery = productQuery.order("created_at", { ascending: false });
-    else if (sort === "price-asc") productQuery = productQuery.order("price_amount", { ascending: true });
-    else if (sort === "price-desc") productQuery = productQuery.order("price_amount", { ascending: false });
+    else if (sort === "price-asc") productQuery = productQuery.order("price_amount", { ascending: true, nullsFirst: false });
+    else if (sort === "price-desc") productQuery = productQuery.order("price_amount", { ascending: false, nullsFirst: false });
     else productQuery = productQuery.order("featured", { ascending: false }).order("sort_order").order("created_at", { ascending: false });
 
     const { data: productData, error: productError, count } = await productQuery.limit(limit);

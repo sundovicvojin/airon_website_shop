@@ -846,7 +846,7 @@ export type Database = {
           currency: string
           featured: boolean
           id: string
-          price_amount: number
+          price_amount: number | null
           sku: string | null
           slug: string
           sort_order: number
@@ -865,7 +865,7 @@ export type Database = {
           currency?: string
           featured?: boolean
           id?: string
-          price_amount: number
+          price_amount?: number | null
           sku?: string | null
           slug: string
           sort_order?: number
@@ -884,7 +884,7 @@ export type Database = {
           currency?: string
           featured?: boolean
           id?: string
-          price_amount?: number
+          price_amount?: number | null
           sku?: string | null
           slug?: string
           sort_order?: number
@@ -1078,14 +1078,14 @@ export type Database = {
           search_term: string
         }
         Returns: {
-          compare_at_price_amount: number
+          compare_at_price_amount: number | null
           currency: string
           featured: boolean
           id: string
           image_alt: string
           image_path: string
           name: string
-          price_amount: number
+          price_amount: number | null
           short_name: string
           sku: string
           slug: string

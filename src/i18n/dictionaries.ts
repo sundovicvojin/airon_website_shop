@@ -16,20 +16,20 @@ export type Dictionary = {
     cta: { eyebrow: string; title: string; body: string; action: string };
   };
   language: { label: string };
-  productPreview: { addToCart: string; description: string; eyebrow: string; previewOnly: string; stock: { DISABLED: string; IN_STOCK: string; LOW_STOCK: string; OUT_OF_STOCK: string }; title: string };
+  productPreview: { addToCart: string; priceOnRequest: string; requestQuote: string; description: string; eyebrow: string; previewOnly: string; stock: { DISABLED: string; IN_STOCK: string; LOW_STOCK: string; OUT_OF_STOCK: string }; title: string };
   quality: { body: string; eyebrow: string; imageAlt: string; methodBody: string; methodLabel: string; standardBody: string; standardLabel: string; title: string; verificationBody: string; verificationLabel: string };
   shop: { eyebrow: string; title: string; intro: string; count: string; searchLabel: string; searchPlaceholder: string; sortLabel: string; sortFeatured: string; sortNewest: string; sortLowHigh: string; sortHighLow: string; emptyTitle: string; emptyDescription: string };
-  search: { title: string; label: string; placeholder: string; emptyTitle: string; emptyDescription: string; hint: string };
+  search: { priceOnRequest: string; title: string; label: string; placeholder: string; emptyTitle: string; emptyDescription: string; hint: string };
   cart: { title: string; subtotal: string; emptyTitle: string; emptyDescription: string; checkout: string; checkoutNote: string; viewCart: string; remove: string; decrease: string; increase: string };
   collections: { eyebrow: string; title: string; intro: string; emptyTitle: string; emptyDescription: string };
   qualityPage: { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[]; editable: string };
   verificationPage: { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[]; notice: string };
   about: { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[] };
-  contact: { eyebrow: string; title: string; intro: string; name: string; email: string; subject: string; message: string; submit: string; disabled: string; required: string; invalidEmail: string };
+  contact: { inquiryPrefix: string; eyebrow: string; title: string; intro: string; name: string; email: string; subject: string; message: string; submit: string; disabled: string; required: string; invalidEmail: string };
   legal: Record<"terms" | "privacy" | "cookies" | "shipping" | "returns" | "disclaimer", { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[] }>;
   notFound: { eyebrow: string; title: string; description: string };
   error: { eyebrow: string; title: string; description: string; retry: string };
-  product: { unavailableTitle: string; unavailableDescription: string; quantity: string; addToCart: string; outOfStock: string; checkoutDeferred: string; description: string; specifications: string; storage: string; batch: string; coa: string; shipping: string; disclaimer: string; related: string; developmentOnly: string };
+  product: { priceOnRequest: string; requestQuote: string; unavailableTitle: string; unavailableDescription: string; quantity: string; addToCart: string; outOfStock: string; checkoutDeferred: string; description: string; specifications: string; storage: string; batch: string; coa: string; shipping: string; disclaimer: string; related: string; developmentOnly: string };
 };
 
 const dictionaries: Record<Locale, () => Promise<{ dictionary: Dictionary }>> = {

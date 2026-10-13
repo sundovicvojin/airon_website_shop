@@ -6,12 +6,18 @@ import { z } from "zod";
 
 import { revalidateCatalog } from "@/features/admin/revalidation";
 import type { AdminActionState } from "@/features/admin/types";
-import { validateImage } from "@/features/admin/uploads";
+import { validateImage, validatePdf } from "@/features/admin/uploads";
 import { parseMoneyInput } from "@/lib/money";
 import { requireAdmin } from "@/lib/permissions/admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const optionalText = z.string().trim().transform(value => value || null);
+// An empty price or a zero price both mean "Price by arrangement" and are stored as NULL.
+function priceCents(value: string) {
+  const parsed = value ? parseMoneyInput(value) : null;
+  return parsed === 0 ? null : parsed;
+}
+
 const productSchema = z.object({
   slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens."),
   sku: optionalText.pipe(z.string().max(80).nullable()), strength: z.string().trim().min(1).max(80), unit: z.string().trim().min(1).max(40),
@@ -24,9 +30,9 @@ const productSchema = z.object({
   srName: optionalText, srShortName: optionalText, srShortDescription: optionalText, srDescription: optionalText,
 }).superRefine((value, context) => {
   // An empty price means "Price on request" and is stored as NULL, never 0.
-  const price = value.price ? parseMoneyInput(value.price) : null;
+  const price = priceCents(value.price);
   const compare = value.comparePrice ? parseMoneyInput(value.comparePrice) : null;
-  if (value.price && price === null) context.addIssue({ code: "custom", path: ["price"], message: "Enter a valid EUR amount." });
+  if (value.price && parseMoneyInput(value.price) === null) context.addIssue({ code: "custom", path: ["price"], message: "Enter a valid EUR amount." });
   if (value.comparePrice && compare === null) context.addIssue({ code: "custom", path: ["comparePrice"], message: "Enter a valid EUR amount." });
   else if (compare !== null && price === null) context.addIssue({ code: "custom", path: ["comparePrice"], message: "Compare price requires a price." });
   else if (compare !== null && price !== null && compare <= price) context.addIssue({ code: "custom", path: ["comparePrice"], message: "Compare price must exceed price." });
@@ -50,7 +56,7 @@ async function saveProduct(productId: string | null, _state: AdminActionState, f
   if (!parsed.success) return { success: false, message: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
   const { client } = await requireAdmin("manageCatalog");
   const input = parsed.data;
-  const core = { slug: input.slug, sku: input.sku, strength: input.strength, unit: input.unit, price_amount: input.price ? parseMoneyInput(input.price) : null, compare_at_price_amount: input.comparePrice ? parseMoneyInput(input.comparePrice) : null, stock_quantity: input.stockQuantity, stock_status: input.stockStatus, visibility: input.visibility, active: input.active, featured: input.featured, sort_order: input.sortOrder };
+  const core = { slug: input.slug, sku: input.sku, strength: input.strength, unit: input.unit, price_amount: priceCents(input.price), compare_at_price_amount: input.comparePrice ? parseMoneyInput(input.comparePrice) : null, stock_quantity: input.stockQuantity, stock_status: input.stockStatus, visibility: input.visibility, active: input.active, featured: input.featured, sort_order: input.sortOrder };
   let id = productId;
   if (id) {
     const { error } = await client.from("products").update(core).eq("id", id);
@@ -84,6 +90,19 @@ async function saveProduct(productId: string | null, _state: AdminActionState, f
       if (oldImages?.length) await client.storage.from("product-images").remove(oldImages.map(item => item.storage_path));
     } catch (cause) { return { success: false, message: cause instanceof Error ? cause.message : "Image upload failed." }; }
   }
+  const pdf = formData.get("catalogPdf");
+  if (pdf instanceof File && pdf.size > 0) {
+    try {
+      await validatePdf(pdf);
+      const path = `products/${id}/docs/${crypto.randomUUID()}.pdf`;
+      const { error: uploadError } = await client.storage.from("product-documents").upload(path, pdf, { contentType: "application/pdf", upsert: false });
+      if (uploadError) return { success: false, message: uploadError.message };
+      const { data: oldDocument } = await client.from("product_documents").select("storage_path").eq("product_id", id).maybeSingle();
+      const { error: documentError } = await client.from("product_documents").upsert({ product_id: id, title: pdf.name.slice(0, 180) || "Product PDF", storage_path: path }, { onConflict: "product_id" });
+      if (documentError) { await client.storage.from("product-documents").remove([path]); return { success: false, message: documentError.message }; }
+      if (oldDocument) await client.storage.from("product-documents").remove([oldDocument.storage_path]);
+    } catch (cause) { return { success: false, message: cause instanceof Error ? cause.message : "PDF upload failed." }; }
+  }
   const galleryFiles = formData.getAll("galleryImages").filter((value): value is File => value instanceof File && value.size > 0);
   if (galleryFiles.length > 8) return { success: false, message: "Upload at most 8 gallery images at once." };
   for (const [index, galleryFile] of galleryFiles.entries()) {
@@ -114,10 +133,11 @@ export async function setProductState(id: string, operation: "archive" | "disabl
 export async function deleteProduct(id: string) {
   const { client } = await requireAdmin("manageCatalog");
   const privileged = createSupabaseAdminClient();
-  const [{ count, error: countError }, { data: product, error: productError }, { data: images }] = await Promise.all([
+  const [{ count, error: countError }, { data: product, error: productError }, { data: images }, { data: documents }] = await Promise.all([
     privileged.from("order_items").select("id", { count: "exact", head: true }).eq("product_id", id),
     client.from("products").select("slug").eq("id", id).single(),
     client.from("product_images").select("storage_path").eq("product_id", id),
+    client.from("product_documents").select("storage_path").eq("product_id", id),
   ]);
   if (countError) throw countError;
   if (productError) throw productError;
@@ -125,6 +145,7 @@ export async function deleteProduct(id: string) {
   const { error } = await client.from("products").delete().eq("id", id);
   if (error) throw error;
   if (images?.length) await client.storage.from("product-images").remove(images.map(image => image.storage_path));
+  if (documents?.length) await client.storage.from("product-documents").remove(documents.map(document => document.storage_path));
   revalidatePath("/admin/products");
   revalidateCatalog(product.slug);
 }
@@ -136,5 +157,15 @@ export async function removeProductImage(imageId: string) {
   const { error: deleteError } = await client.from("product_images").delete().eq("id", imageId);
   if (deleteError) throw deleteError;
   await client.storage.from("product-images").remove([data.storage_path]);
+  revalidateCatalog(data.products.slug);
+}
+
+export async function removeProductDocument(documentId: string) {
+  const { client } = await requireAdmin("manageCatalog");
+  const { data, error } = await client.from("product_documents").select("storage_path,products(slug)").eq("id", documentId).single();
+  if (error) throw error;
+  const { error: deleteError } = await client.from("product_documents").delete().eq("id", documentId);
+  if (deleteError) throw deleteError;
+  await client.storage.from("product-documents").remove([data.storage_path]);
   revalidateCatalog(data.products.slug);
 }

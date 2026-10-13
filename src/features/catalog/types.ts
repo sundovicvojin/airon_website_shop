@@ -28,6 +28,8 @@ export type ProductDetailModel = ProductCardModel & Readonly<{
   storageInformation: string;
   batchInformation: string;
   coaAvailable: boolean;
+  /** Signed URL of the optional product PDF; null when none is uploaded. */
+  documentUrl?: string | null;
   shippingInformation: string;
   disclaimer: string;
 }>;

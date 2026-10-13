@@ -29,7 +29,7 @@ export type Dictionary = {
   legal: Record<"terms" | "privacy" | "cookies" | "shipping" | "returns" | "disclaimer", { eyebrow: string; title: string; intro: string; blocks: readonly ContentBlock[] }>;
   notFound: { eyebrow: string; title: string; description: string };
   error: { eyebrow: string; title: string; description: string; retry: string };
-  product: { priceOnRequest: string; requestQuote: string; unavailableTitle: string; unavailableDescription: string; quantity: string; addToCart: string; outOfStock: string; checkoutDeferred: string; description: string; specifications: string; storage: string; batch: string; coa: string; shipping: string; disclaimer: string; related: string; developmentOnly: string };
+  product: { priceOnRequest: string; requestQuote: string; downloadPdf: string; unavailableTitle: string; unavailableDescription: string; quantity: string; addToCart: string; outOfStock: string; checkoutDeferred: string; description: string; specifications: string; storage: string; batch: string; coa: string; shipping: string; disclaimer: string; related: string; developmentOnly: string };
 };
 
 const dictionaries: Record<Locale, () => Promise<{ dictionary: Dictionary }>> = {

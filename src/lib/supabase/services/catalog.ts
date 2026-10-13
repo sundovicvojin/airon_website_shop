@@ -157,14 +157,15 @@ export async function getPublicProductBySlug(slug: string, locale: Locale): Prom
     if (!product) return success(null);
 
     const localeCandidates = locale === "en" ? ["en"] : ["sr", "en"];
-    const [translationsResult, imagesResult, specsResult, batchesResult, coaResult] = await Promise.all([
+    const [translationsResult, imagesResult, specsResult, batchesResult, coaResult, documentResult] = await Promise.all([
       client.from("product_translations").select("product_id, locale, name, short_name, short_description, description, storage_information, shipping_information, disclaimer").eq("product_id", product.id).in("locale", localeCandidates),
       client.from("product_images").select("product_id, storage_path, alt_text, is_primary, sort_order").eq("product_id", product.id).order("is_primary", { ascending: false }).order("sort_order"),
       client.from("product_specifications").select("id, value, unit, sort_order").eq("product_id", product.id).order("sort_order"),
       client.from("product_batches").select("batch_number").eq("product_id", product.id).eq("active", true).order("created_at", { ascending: false }).limit(5),
       client.from("coa_documents").select("id").eq("product_id", product.id).eq("active", true).eq("public_visible", true).limit(1),
+      client.from("product_documents").select("storage_path").eq("product_id", product.id).maybeSingle(),
     ]);
-    const firstError = translationsResult.error ?? imagesResult.error ?? specsResult.error ?? batchesResult.error ?? coaResult.error;
+    const firstError = translationsResult.error ?? imagesResult.error ?? specsResult.error ?? batchesResult.error ?? coaResult.error ?? documentResult.error;
     if (firstError) return failure(new AppError("INTERNAL_ERROR", "Unable to load product detail data.", { cause: firstError }));
 
     const translation = chooseTranslation(translationsResult.data as TranslationRow[], product.id, locale);
@@ -173,6 +174,8 @@ export async function getPublicProductBySlug(slug: string, locale: Locale): Prom
     const signed = await signStoragePaths(client, "product-images", imageRows.map((image) => image.storage_path));
     const gallery = imageRows.flatMap((image) => signed.get(image.storage_path) ?? []);
 
+    const documentSigned = documentResult.data ? await signStoragePaths(client, "product-documents", [documentResult.data.storage_path]) : null;
+    const documentUrl = documentResult.data ? documentSigned?.get(documentResult.data.storage_path) ?? null : null;
     const specificationRows = specsResult.data ?? [];
     const batchRows = batchesResult.data ?? [];
     const coaRows = coaResult.data ?? [];
@@ -194,6 +197,7 @@ export async function getPublicProductBySlug(slug: string, locale: Locale): Prom
       batchInformation: batchRows.map((batch) => batch.batch_number).join(", "),
       coaAvailable: coaRows.length > 0,
       comparePriceAmount: product.compare_at_price_amount ?? undefined,
+      documentUrl,
       currency: "EUR", description: translation.description ?? "", disclaimer: translation.disclaimer ?? "",
       featured: product.featured, gallery, id: product.id,
       image: primaryImage ? signed.get(primaryImage.storage_path) ?? null : null,

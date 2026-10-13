@@ -7,7 +7,7 @@ import type { Database } from "@/lib/supabase/database.types";
 
 export async function signStoragePaths(
   client: SupabaseClient<Database>,
-  bucket: "product-images" | "banners" | "coa",
+  bucket: "product-images" | "product-documents" | "banners" | "coa",
   paths: readonly string[],
 ): Promise<ReadonlyMap<string, string>> {
   const uniquePaths = [...new Set(paths.filter(Boolean))];

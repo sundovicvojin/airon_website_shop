@@ -35,7 +35,7 @@ export async function getAdminProducts(query = "") {
 
 export async function getAdminProduct(id: string) {
   const { client } = await requireAdmin("manageCatalog");
-  const { data, error } = await client.from("products").select("id,slug,strength,unit,sku,price_amount,compare_at_price_amount,currency,stock_quantity,stock_status,visibility,active,featured,sort_order,archived_at,product_translations(locale,name,short_name,short_description,description,storage_information,shipping_information,disclaimer),product_images(id,storage_path,alt_text,is_primary,sort_order),product_categories(category_id)").eq("id", id).maybeSingle();
+  const { data, error } = await client.from("products").select("id,slug,strength,unit,sku,price_amount,compare_at_price_amount,currency,stock_quantity,stock_status,visibility,active,featured,sort_order,archived_at,product_translations(locale,name,short_name,short_description,description,storage_information,shipping_information,disclaimer),product_images(id,storage_path,alt_text,is_primary,sort_order),product_documents(id,title,storage_path),product_categories(category_id)").eq("id", id).maybeSingle();
   if (error) throw error;
   return data;
 }

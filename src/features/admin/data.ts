@@ -26,7 +26,7 @@ export async function getDashboardData() {
 
 export async function getAdminProducts(query = "") {
   const { client } = await requireAdmin("manageCatalog");
-  let request = client.from("products").select("id,slug,strength,unit,sku,price_amount,currency,stock_quantity,stock_status,visibility,active,featured,archived_at,updated_at,product_translations(locale,name),product_images(storage_path,is_primary)").order("updated_at", { ascending: false }).limit(100);
+  let request = client.from("products").select("id,slug,strength,unit,sku,price_amount,currency,stock_quantity,stock_status,visibility,active,featured,archived_at,updated_at,product_translations(locale,name,description),product_images(storage_path,is_primary)").order("updated_at", { ascending: false }).limit(100);
   if (query) request = request.or(`slug.ilike.%${query.replaceAll(/[%,()]/g, "")}%,sku.ilike.%${query.replaceAll(/[%,()]/g, "")}%`);
   const { data, error } = await request;
   if (error) throw error;
